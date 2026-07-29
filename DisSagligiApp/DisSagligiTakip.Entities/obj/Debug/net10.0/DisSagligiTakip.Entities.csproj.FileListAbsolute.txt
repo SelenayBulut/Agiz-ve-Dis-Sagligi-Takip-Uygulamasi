@@ -1,0 +1,11 @@
+C:\Projects\DisSagligiApp\DisSagligiTakip.Entities\bin\Debug\net10.0\DisSagligiTakip.Entities.deps.json
+C:\Projects\DisSagligiApp\DisSagligiTakip.Entities\bin\Debug\net10.0\DisSagligiTakip.Entities.dll
+C:\Projects\DisSagligiApp\DisSagligiTakip.Entities\bin\Debug\net10.0\DisSagligiTakip.Entities.pdb
+C:\Projects\DisSagligiApp\DisSagligiTakip.Entities\obj\Debug\net10.0\DisSagligiTakip.Entities.GeneratedMSBuildEditorConfig.editorconfig
+C:\Projects\DisSagligiApp\DisSagligiTakip.Entities\obj\Debug\net10.0\DisSagligiTakip.Entities.AssemblyInfoInputs.cache
+C:\Projects\DisSagligiApp\DisSagligiTakip.Entities\obj\Debug\net10.0\DisSagligiTakip.Entities.AssemblyInfo.cs
+C:\Projects\DisSagligiApp\DisSagligiTakip.Entities\obj\Debug\net10.0\DisSagligiTakip.Entities.csproj.CoreCompileInputs.cache
+C:\Projects\DisSagligiApp\DisSagligiTakip.Entities\obj\Debug\net10.0\DisSagligiTakip.Entities.dll
+C:\Projects\DisSagligiApp\DisSagligiTakip.Entities\obj\Debug\net10.0\refint\DisSagligiTakip.Entities.dll
+C:\Projects\DisSagligiApp\DisSagligiTakip.Entities\obj\Debug\net10.0\DisSagligiTakip.Entities.pdb
+C:\Projects\DisSagligiApp\DisSagligiTakip.Entities\obj\Debug\net10.0\ref\DisSagligiTakip.Entities.dll

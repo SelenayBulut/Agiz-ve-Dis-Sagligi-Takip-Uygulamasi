@@ -1,0 +1,6 @@
+@DisSagligiApp_HostAddress = http://localhost:5019
+
+GET {{DisSagligiApp_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

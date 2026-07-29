@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DisSagligiApp.csproj" />
+  <Project Path="DisSagligiTakip.Business/DisSagligiTakip.Business.csproj" />
+  <Project Path="DisSagligiTakip.DataAccess/DisSagligiTakip.DataAccess.csproj" />
+  <Project Path="DisSagligiTakip.Entities/DisSagligiTakip.Entities.csproj" />
+</Solution>

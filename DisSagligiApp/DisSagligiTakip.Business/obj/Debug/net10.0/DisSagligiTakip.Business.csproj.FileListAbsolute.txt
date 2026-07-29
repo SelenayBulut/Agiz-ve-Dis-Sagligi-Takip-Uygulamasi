@@ -1,0 +1,17 @@
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\bin\Debug\net10.0\DisSagligiTakip.Business.deps.json
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\bin\Debug\net10.0\DisSagligiTakip.Business.dll
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\bin\Debug\net10.0\DisSagligiTakip.Business.pdb
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\bin\Debug\net10.0\DisSagligiTakip.DataAccess.dll
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\bin\Debug\net10.0\DisSagligiTakip.Entities.dll
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\bin\Debug\net10.0\DisSagligiTakip.DataAccess.pdb
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\bin\Debug\net10.0\DisSagligiTakip.Entities.pdb
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\obj\Debug\net10.0\DisSagligiTakip.Business.csproj.AssemblyReference.cache
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\obj\Debug\net10.0\DisSagligiTakip.Business.GeneratedMSBuildEditorConfig.editorconfig
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\obj\Debug\net10.0\DisSagligiTakip.Business.AssemblyInfoInputs.cache
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\obj\Debug\net10.0\DisSagligiTakip.Business.AssemblyInfo.cs
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\obj\Debug\net10.0\DisSagligiTakip.Business.csproj.CoreCompileInputs.cache
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\obj\Debug\net10.0\DisSagli.32FD2E2C.Up2Date
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\obj\Debug\net10.0\DisSagligiTakip.Business.dll
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\obj\Debug\net10.0\refint\DisSagligiTakip.Business.dll
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\obj\Debug\net10.0\DisSagligiTakip.Business.pdb
+C:\Projects\DisSagligiApp\DisSagligiTakip.Business\obj\Debug\net10.0\ref\DisSagligiTakip.Business.dll
