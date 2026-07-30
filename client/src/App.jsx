@@ -2,73 +2,61 @@ import React, { useState } from 'react';
 import Register from './components/Register';
 import Login from './components/Login';
 import ForgotPassword from './components/ForgotPassword';
-import Home from './components/Home'; //ana sayfa bileşeni
+import Home from './components/Home';
 import Profile from './components/Profile';
+import DentalHealth from './components/DentalHealth';
 import './App.css';
 
 function App() {
-  // Hangi sayfanın aktif olduğunu tutuyoruz ('login', 'register', 'forgot', 'home')
+  // Hangi sayfanın aktif olduğunu tutuyoruz
   const [activeTab, setActiveTab] = useState('login');
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', paddingBottom: '50px' }}>
-      
-      {/* Eğer kullanıcı 'home' (Ana Sayfa) sekmesindeyse üst header'ı gizleyebilir veya değiştirebiliriz */}
-      {activeTab !== 'home' && (
-        <header style={{ textAlign: 'center', padding: '20px', backgroundColor: '#f8f9fa', borderBottom: '1px solid #ddd' }}>
-          <h1>Ağız ve Diş Sağlığı Takip Uygulaması</h1>
+    <div className="app-container">
+      {/* Giriş, Kayıt ve Şifre Unuttum sayfalarında üstteki test header'ını gizliyoruz 
+          Çünkü bu sayfalar zaten kendi içlerinde geçiş butonlarına (Kayıt ol, Giriş yap vb.) sahip. */}
+      {activeTab !== 'login' && activeTab !== 'register' && activeTab !== 'forgot' && (
+        <header style={{ textAlign: 'center', padding: '15px', backgroundColor: '#0c594c', color: '#fff', borderBottom: '1px solid #11826d' }}>
+          <h2>Ağız ve Diş Sağlığı Takip Uygulaması</h2>
           
-          {/* Sayfalar arası geçiş butonları */}
-          <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+          {/* İstersen buraya ana sayfa içi menü butonlarını koyabilirsin */}
+          <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center', gap: '15px' }}>
+            <button 
+              onClick={() => setActiveTab('home')}
+              style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontWeight: activeTab === 'home' ? 'bold' : 'normal' }}
+            >
+              Ana Sayfa
+            </button>
+            <button 
+              onClick={() => setActiveTab('dental-health')}
+              style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontWeight: activeTab === 'dental-health' ? 'bold' : 'normal' }}
+            >
+              Diş Sağlığım
+            </button>
+            <button 
+              onClick={() => setActiveTab('profile')}
+              style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontWeight: activeTab === 'profile' ? 'bold' : 'normal' }}
+            >
+              Profil
+            </button>
             <button 
               onClick={() => setActiveTab('login')}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: activeTab === 'login' ? '#28a745' : '#ccc',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
+              style={{ background: 'none', border: 'none', color: '#ffdd57', cursor: 'pointer' }}
             >
-              Giriş Yap
-            </button>
-            <button 
-              onClick={() => setActiveTab('register')}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: activeTab === 'register' ? '#007bff' : '#ccc',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Kayıt Ol
-            </button>
-            <button 
-              onClick={() => setActiveTab('forgot')}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: activeTab === 'forgot' ? '#ffc107' : '#ccc',
-                color: activeTab === 'forgot' ? '#000' : '#fff',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Şifremi Unuttum
+              Çıkış Yap
             </button>
           </div>
         </header>
       )}
 
+      {/* Ana içerik alanı */}
       <main>
         {activeTab === 'login' && <Login setActiveTab={setActiveTab} />}
-        {activeTab === 'register' && <Register />}
-        {activeTab === 'forgot' && <ForgotPassword />}
+        {activeTab === 'register' && <Register setActiveTab={setActiveTab} />}
+        {activeTab === 'forgot' && <ForgotPassword setActiveTab={setActiveTab} />}
         {activeTab === 'home' && <Home setActiveTab={setActiveTab} />}
-        {activeTab === 'profile' && <Profile setActiveTab={setActiveTab} />} {/* 2. Profil sekmesini buraya ekledik */}
+        {activeTab === 'profile' && <Profile setActiveTab={setActiveTab} />}
+        {activeTab === 'dental-health' && <DentalHealth setActiveTab={setActiveTab} />}
       </main>
     </div>
   );

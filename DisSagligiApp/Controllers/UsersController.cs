@@ -123,7 +123,7 @@ namespace DisSagligiApp.Controllers
                 return BadRequest(new { message = "Lütfen Mail Adresi alanını doldurunuz." });
             }
 
-            if (model.BirthDate == default)
+            if (!model.BirthDate.HasValue)
             {
                 return BadRequest(new { message = "Lütfen Doğum Tarihi alanını doldurunuz." });
             }
@@ -157,7 +157,7 @@ namespace DisSagligiApp.Controllers
             {
                 FullName = model.FullName.Trim(),
                 Email = cleanEmail,
-                BirthDate = model.BirthDate,
+                BirthDate = model.BirthDate.Value,
                 PasswordHash = encryptedPassword
             };
 
