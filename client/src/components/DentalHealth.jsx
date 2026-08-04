@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Swal from 'sweetalert2';
+import './Auth.css';
 
-const API_BASE_URL = "http://localhost:5019/api"; // Kendi portuna göre ayarladın
+const API_BASE_URL = "http://localhost:5019/api";
 
-export default function DentalHealth() {
-    const [activeTab, setActiveTab] = useState('durum');
+export default function DentalHealth({ setActiveTab }) {
+    const [activeTabName, setActiveTabName] = useState('durum');
     const [dailySuggestion, setDailySuggestion] = useState('Öneri yükleniyor...');
     const [targets, setTargets] = useState([]);
     const [records, setRecords] = useState([]);
+    const [userInfo, setUserInfo] = useState({ fullName: '' });
 
     // Durum Formu State'leri
     const [selectedTargetId, setSelectedTargetId] = useState('');
@@ -16,12 +19,12 @@ export default function DentalHealth() {
     const [recordDuration, setRecordDuration] = useState('');
     const [recordIsApplied, setRecordIsApplied] = useState(true);
 
-    // Not ve Görsel Formu State'leri (TrackingRecord modelindeki NoteText ve ImagePath için)
+    // Not ve Görsel Formu State'leri
     const [noteTargetId, setNoteTargetId] = useState('');
     const [noteDescription, setNoteDescription] = useState('');
-    const [noteImage, setNoteImage] = useState(''); // Şimdilik dosya yolu veya string
+    const [noteImage, setNoteImage] = useState('');
 
-    // Yeni Hedef Formu State'leri (UserId, Title, Description, Period, Priority)
+    // Yeni Hedef Formu State'leri
     const [targetTitle, setTargetTitle] = useState('');
     const [targetDescription, setTargetDescription] = useState('');
     const [targetPeriod, setTargetPeriod] = useState('');
@@ -33,56 +36,62 @@ export default function DentalHealth() {
     const [targetIdToDelete, setTargetIdToDelete] = useState(null);
 
     useEffect(() => {
-        loadRandomSuggestion();
-        loadTargets();
-        loadLast7DaysRecords();
+        loadInitialData();
     }, []);
 
-    // 1. SuggestionsController'dan Rastgele Öneri Çekme
-    const loadRandomSuggestion = async () => {
+    const loadInitialData = async () => {
+        const userId = localStorage.getItem('userId');
+        const headers = userId ? { Authorization: `Bearer ${userId}` } : {};
+
         try {
-            const res = await fetch(`${API_BASE_URL}/Suggestions/random`);
-            if (!res.ok) throw new Error("Öneri alınamadı");
-            const data = await res.json();
-            setDailySuggestion(data.suggestion || data.Suggestion);
+            // 1. Kullanıcı Bilgileri
+            const userResponse = await axios.get(`${API_BASE_URL}/Users`, { headers });
+            const currentUser = userResponse.data.find(u => u.id.toString() === userId);
+            if (currentUser) setUserInfo(currentUser);
+
+            // 2. Rastgele Öneri
+            const suggestionResponse = await axios.get(`${API_BASE_URL}/Suggestions/random`);
+            setDailySuggestion(suggestionResponse.data.suggestion || suggestionResponse.data.Suggestion);
+
+            // 3. Hedefler
+            const targetResponse = await axios.get(`${API_BASE_URL}/Targets`, { headers });
+            setTargets(targetResponse.data);
+
+            // 4. Son 7 Günlük Kayıtlar
+            if (userId) {
+                const trackingResponse = await axios.get(`${API_BASE_URL}/TrackingRecords/user/${userId}/last7days`, { headers });
+                setRecords(trackingResponse.data);
+            }
         } catch (err) {
-            console.error("Öneri yüklenirken hata:", err);
-            setDailySuggestion("Sağlık önerisi yüklenemedi.");
+            console.error("Veriler yüklenirken hata oluştu:", err);
         }
     };
 
-    // 2. Hedefleri Çek
     const loadTargets = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/Targets`);
-            if (!res.ok) throw new Error("Hedefler alınamadı");
-            const data = await res.json();
-            setTargets(data);
+            const res = await axios.get(`${API_BASE_URL}/Targets`);
+            setTargets(res.data);
         } catch (err) {
             console.error("Hedefler yüklenemedi:", err);
         }
     };
 
-    // 3. Son 7 Günlük Kayıtları Çek
     const loadLast7DaysRecords = async () => {
-        const currentUserId = localStorage.getItem('userId') || 1;
+        const userId = localStorage.getItem('userId') || 1;
         try {
-            const res = await fetch(`${API_BASE_URL}/TrackingRecords/user/${currentUserId}/last7days`);
-            if (!res.ok) throw new Error("Kayıtlar alınamadı");
-            const data = await res.json();
-            setRecords(data);
+            const res = await axios.get(`${API_BASE_URL}/TrackingRecords/user/${userId}/last7days`);
+            setRecords(res.data);
         } catch (err) {
             console.error("Kayıtlar yüklenemedi:", err);
         }
     };
 
-    // Takip Kaydı Ekle
     const handleRecordSubmit = async (e) => {
         e.preventDefault();
-        const currentUserId = localStorage.getItem('userId') || 1;
+        const userId = localStorage.getItem('userId') || 1;
 
         const newRecord = {
-            userId: parseInt(currentUserId),
+            userId: parseInt(userId),
             targetId: parseInt(selectedTargetId),
             date: `${recordDate}T${recordTime}:00`,
             duration: parseInt(recordDuration),
@@ -92,33 +101,25 @@ export default function DentalHealth() {
         };
 
         try {
-            const res = await fetch(`${API_BASE_URL}/TrackingRecords`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newRecord)
-            });
-
-            if (res.ok) {
+            const res = await axios.post(`${API_BASE_URL}/TrackingRecords`, newRecord);
+            if (res.status === 200 || res.status === 201) {
                 Swal.fire('Başarılı', 'Takip kaydı eklendi!', 'success');
                 setRecordDuration('');
                 loadLast7DaysRecords();
-            } else {
-                Swal.fire('Hata', 'Kayıt eklenirken hata oluştu.', 'error');
             }
         } catch (err) {
-            Swal.fire('Hata', 'Sunucu bağlantı hatası.', 'error');
+            Swal.fire('Hata', 'Kayıt eklenirken hata oluştu.', 'error');
         }
     };
 
-    // Not ve Görsel İçeren TrackingRecord Ekleme
     const handleNoteSubmit = async (e) => {
         e.preventDefault();
-        const currentUserId = localStorage.getItem('userId') || 1;
+        const userId = localStorage.getItem('userId') || 1;
 
         const recordWithNote = {
-            userId: parseInt(currentUserId),
+            userId: parseInt(userId),
             targetId: parseInt(noteTargetId),
-            date: new Date().toISOString(),
+            date: `${recordDate}T${recordTime}:00`,
             duration: 0,
             isApplied: false,
             noteText: noteDescription,
@@ -126,401 +127,459 @@ export default function DentalHealth() {
         };
 
         try {
-            const res = await fetch(`${API_BASE_URL}/TrackingRecords`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(recordWithNote)
-            });
-
-            if (res.ok) {
+            const res = await axios.post(`${API_BASE_URL}/TrackingRecords`, recordWithNote);
+            if (res.status === 200 || res.status === 201) {
                 Swal.fire('Başarılı', 'Notunuz ve görseliniz başarıyla kaydedildi!', 'success');
                 setNoteDescription('');
                 setNoteImage('');
+                setNoteTargetId('');
                 loadLast7DaysRecords();
-            } else {
-                Swal.fire('Hata', 'Not kaydedilirken hata oluştu.', 'error');
             }
         } catch (err) {
-            Swal.fire('Hata', 'Sunucu bağlantı hatası.', 'error');
+            Swal.fire('Hata', 'Not kaydedilirken hata oluştu.', 'error');
         }
     };
 
     const handleTargetSubmit = async (e) => {
         e.preventDefault();
-        const currentUserId = localStorage.getItem('userId') || 1;
+        const userId = localStorage.getItem('userId') || 1;
 
         const newTarget = {
-            userId: parseInt(currentUserId),
+            userId: parseInt(userId),
             title: targetTitle,
             description: targetDescription,
             period: targetPeriod,
             priority: targetPriority,
-            trackingRecords: [] // Navigasyon koleksiyonunu boş dizi olarak gönderiyoruz
+            trackingRecords: []
         };
 
         try {
-            const res = await fetch(`${API_BASE_URL}/Targets`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newTarget)
-            });
-
-            if (res.ok) {
+            const res = await axios.post(`${API_BASE_URL}/Targets`, newTarget);
+            if (res.status === 200 || res.status === 201) {
                 Swal.fire('Başarılı', 'Hedef başarıyla eklendi!', 'success');
                 setTargetTitle('');
                 setTargetDescription('');
                 setTargetPeriod('');
                 loadTargets();
-            } else {
-                const errData = await res.json();
-                console.error("Hata detayı (Validation errors):", errData.errors || errData);
-                Swal.fire('Hata', 'Hedef eklenirken hata oluştu.', 'error');
             }
         } catch (err) {
-            Swal.fire('Hata', 'Sunucu bağlantı hatası.', 'error');
+            Swal.fire('Hata', 'Hedef eklenirken hata oluştu.', 'error');
         }
     };
 
-    // Hedef Silme Kontrolü
     const tryDeleteTarget = async (id) => {
         setTargetIdToDelete(id);
         try {
-            const res = await fetch(`${API_BASE_URL}/Targets/${id}?confirmed=false`, {
-                method: 'DELETE'
-            });
-            const result = await res.json();
-
-            if (res.status === 400 && result.requiresConfirmation) {
-                setDeleteModalMessage(result.message);
+            const res = await axios.delete(`${API_BASE_URL}/Targets/${id}?confirmed=false`);
+            if (res.data && res.data.requiresConfirmation) {
+                setDeleteModalMessage(res.data.message);
                 setShowDeleteModal(true);
-            } else if (res.ok) {
-                Swal.fire('Silindi', result.message || 'Hedef başarıyla silindi.', 'success');
+            } else {
+                Swal.fire('Silindi', 'Hedef başarıyla silindi.', 'success');
                 loadTargets();
                 loadLast7DaysRecords();
-            } else {
-                Swal.fire('Hata', result.message || 'Silme işlemi başarısız.', 'error');
             }
         } catch (err) {
-            Swal.fire('Hata', 'Sunucu bağlantı hatası.', 'error');
+            if (err.response && err.response.status === 400 && err.response.data.requiresConfirmation) {
+                setDeleteModalMessage(err.response.data.message);
+                setShowDeleteModal(true);
+            } else {
+                Swal.fire('Hata', 'Silme işlemi başarısız.', 'error');
+            }
         }
     };
 
-    // Onaylı Silme İşlemi
     const confirmDelete = async () => {
         if (!targetIdToDelete) return;
 
         try {
-            const res = await fetch(`${API_BASE_URL}/Targets/${targetIdToDelete}?confirmed=true`, {
-                method: 'DELETE'
-            });
-            const result = await res.json();
-
+            await axios.delete(`${API_BASE_URL}/Targets/${targetIdToDelete}?confirmed=true`);
             setShowDeleteModal(false);
-            if (res.ok) {
-                Swal.fire('Silindi', result.message || 'Hedef başarıyla silindi.', 'success');
-                loadTargets();
-                loadLast7DaysRecords();
-            } else {
-                Swal.fire('Hata', 'Silme işlemi gerçekleştirilemedi.', 'error');
-            }
+            Swal.fire('Silindi', 'Hedef başarıyla silindi.', 'success');
+            loadTargets();
+            loadLast7DaysRecords();
         } catch (err) {
-            Swal.fire('Hata', 'Sunucu bağlantı hatası.', 'error');
+            Swal.fire('Hata', 'Silme işlemi gerçekleştirilemedi.', 'error');
         }
         setTargetIdToDelete(null);
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
+        setActiveTab('login');
+    };
+
+    const displayName = userInfo.fullName || localStorage.getItem('userName') || 'Kullanıcı';
+    const displayEmail = userInfo.email || 'bulutselenay06@gmail.com';
+    const initialLetter = displayName.charAt(0).toUpperCase();
+
     return (
-        <div className="container py-5">
-            <h2 className="mb-4 text-center fw-bold text-primary">
-                <i className="fa-solid fa-tooth me-2"></i>Ağız ve Diş Sağlığı Takip Paneli
-            </h2>
+        <div style={{ backgroundColor: '#f4f6f5', minHeight: '100vh', paddingBottom: '40px', fontFamily: 'Arial, sans-serif' }}>
+            
+            {/* ÜST NAVBAR */}
+            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 40px', backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '32px', height: '32px', backgroundColor: '#085f4f', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2C6.5 2 2 6.5 2 12c0 2.5 1 4.5 2.5 6l1.5 2.5h12l1.5-2.5C21 16.5 22 14.5 22 12c0-5.5-4.5-10-10-10z"></path>
+                        </svg>
+                    </div>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#111827' }}>DişKlinik</span>
+                </div>
 
-            {/* Sekmeler */}
-            <ul className="nav nav-tabs mb-4" role="tablist">
-                <li className="nav-item">
-                    <button 
-                        className={`nav-link ${activeTab === 'durum' ? 'active fw-bold' : ''}`}
-                        onClick={() => setActiveTab('durum')}
-                    >
-                        Durum
-                    </button>
-                </li>
-                <li className="nav-item">
-                    <button 
-                        className={`nav-link ${activeTab === 'hedef' ? 'active fw-bold' : ''}`}
-                        onClick={() => setActiveTab('hedef')}
-                    >
-                        Hedef
-                    </button>
-                </li>
-            </ul>
+                <nav style={{ display: 'flex', gap: '20px', backgroundColor: '#f3f4f6', padding: '6px 16px', borderRadius: '20px' }}>
+                    <button onClick={() => setActiveTab('home')} style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer' }}>Ana Sayfa</button>
+                    <button onClick={() => setActiveTab('dental-health')} style={{ background: 'none', border: 'none', fontWeight: 'bold', color: '#085f4f', cursor: 'pointer' }}>Diş Sağlığı</button>
+                    <button onClick={() => setActiveTab('profile')} style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer' }}>Profil</button>
+                </nav>
 
-            <div className="tab-content">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#111827' }}>{displayName}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{displayEmail}</div>
+                    </div>
+                    <div style={{ width: '36px', height: '36px', backgroundColor: '#085f4f', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                        {initialLetter}
+                    </div>
+                    <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.9rem', fontWeight: '500' }}>
+                        Çıkış
+                    </button>
+                </div>
+            </header>
+
+            {/* ANA İÇERİK ALANI */}
+            <main style={{ maxWidth: '1100px', margin: '30px auto', padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                
+                {/* Sayfa Başlığı ve Sekme Seçiciler */}
+                <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '25px 30px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb' }}>
+                    <h2 style={{ margin: '0 0 5px 0', fontSize: '1.5rem', color: '#111827' }}>Ağız ve Diş Sağlığı Takibi</h2>
+                    <p style={{ margin: '0 0 20px 0', color: '#6b7280', fontSize: '0.9rem' }}>Sağlık hedeflerinizi belirleyin, kaydedin ve düzenli olarak takip edin.</p>
+                    
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                            onClick={() => setActiveTabName('durum')} 
+                            style={{ padding: '8px 20px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontWeight: 'bold', backgroundColor: activeTabName === 'durum' ? '#085f4f' : '#f3f4f6', color: activeTabName === 'durum' ? '#fff' : '#4b5563' }}
+                        >
+                            Durum 
+                        </button>
+                        <button 
+                            onClick={() => setActiveTabName('hedef')} 
+                            style={{ padding: '8px 20px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontWeight: 'bold', backgroundColor: activeTabName === 'hedef' ? '#085f4f' : '#f3f4f6', color: activeTabName === 'hedef' ? '#fff' : '#4b5563' }}
+                        >
+                            Hedef 
+                        </button>
+                    </div>
+                </div>
+
                 {/* 1. DURUM SEKMESİ */}
-                {activeTab === 'durum' && (
-                    <div>
-                        {/* Günün Önerisi */}
-                        <div className="card p-3 mb-4 shadow-sm" style={{ background: 'linear-gradient(135deg, #e3f2fd, #bbdefb)', borderLeft: '5px solid #2196f3' }}>
-                            <div className="d-flex justify-content-between align-items-center">
-                                <h5><i className="fa-solid fa-lightbulb text-warning me-2"></i>Günün Sağlık Önerisi</h5>
-                                <button className="btn btn-sm btn-outline-primary" onClick={loadRandomSuggestion} title="Yeni Öneri Getir">
-                                    <i className="fa-solid fa-rotate-right"></i> Yenile
-                                </button>
+                {activeTabName === 'durum' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px' }}>
+                        
+                        {/* Sol Kolon: Son 7 Günlük Kayıtlar */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                            <div style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb' }}>
+                                <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#111827' }}>Son 7 Günlük Aktiviteler (Özet)</h3>
+                                {records.length === 0 ? (
+                                    <p style={{ color: '#6b7280', fontSize: '0.9rem', margin: 0 }}>Son 7 günde kayıt bulunmuyor.</p>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
+                                        {records.map((rec, idx) => (
+                                            <div key={idx} style={{ padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #f3f4f6' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                    <span style={{ fontWeight: '600', fontSize: '0.9rem', color: '#111827' }}>{rec.target?.title || 'Hedef'}</span>
+                                                    <span style={{ fontSize: '0.75rem', padding: '2px 8px', backgroundColor: rec.isApplied ? '#e6f4f1' : '#f3f4f6', color: rec.isApplied ? '#085f4f' : '#4b5563', borderRadius: '10px', fontWeight: 'bold' }}>
+                                                        {rec.isApplied ? 'Uygulandı' : 'Not Girildi'}
+                                                    </span>
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Tarih: {new Date(rec.date).toLocaleDateString('tr-TR')} - Saat: {new Date(rec.date).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} {rec.duration > 0 ? `| Süre: ${rec.duration} dk` : ''}</div>
+                                                {rec.noteText && <div style={{ fontSize: '0.85rem', color: '#374151', marginTop: '6px', fontStyle: 'italic' }}>Not: "{rec.noteText}"</div>}
+                                                {rec.imagePath && <div style={{ fontSize: '0.75rem', color: '#085f4f', marginTop: '4px' }}>Görsel: {rec.imagePath}</div>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <p className="mb-0 text-dark fst-italic mt-2">{dailySuggestion}</p>
-                        </div>
 
-                        <div className="row">
-                            {/* Son 7 Günlük Özet */}
-                            <div className="col-lg-5 mb-4">
-                                <div className="card p-4 h-100 shadow-sm">
-                                    <h4 className="mb-3 text-secondary"><i className="fa-solid fa-chart-line me-2"></i>Son 7 Günlük Özet</h4>
-                                    <div className="overflow-auto" style={{ maxHeight: '450px' }}>
-                                        {records.length === 0 ? (
-                                            <p className="text-muted">Son 7 güne ait kayıt bulunamadı.</p>
-                                        ) : (
-                                            <ul className="list-group">
-                                                {records.map((rec, idx) => (
-                                                    <li className="list-group-item mb-2 rounded shadow-sm" key={idx}>
-                                                        <div className="d-flex justify-content-between">
-                                                            <span className="fw-bold">{rec.target?.title || 'Hedef'}</span>
-                                                            <span className="badge bg-success">{rec.isApplied ? 'Uygulandı' : 'Not Girildi'}</span>
-                                                        </div>
-                                                        <small className="text-muted d-block mt-1">
-                                                            Tarih: {new Date(rec.date).toLocaleDateString('tr-TR')} {rec.duration > 0 ? `| Süre: ${rec.duration} dk` : ''}
-                                                        </small>
-                                                        {rec.noteText && <p className="small text-dark mt-1 mb-0 fst-italic">Not: {rec.noteText}</p>}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
+                            {/* Günün Önerisi Küçük Kart */}
+                            {/* Günün Önerisi Küçük Kart */}
+                            <div style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                                    <div style={{ width: '36px', height: '36px', backgroundColor: '#085f4f', color: '#fff', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        💡
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#085f4f', letterSpacing: '0.5px' }}>GÜNÜN ÖNERİSİ</div>
                                     </div>
                                 </div>
+                                <p style={{ margin: 0, color: '#374151', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                                    {dailySuggestion}
+                                </p>
+                                </div>
                             </div>
 
-                            {/* Sağ Kolon: Formlar */}
-                            <div className="col-lg-7">
-                                {/* Hedef Durum Girişi */}
-                                <div className="card p-4 mb-4 shadow-sm">
-                                    <h4 className="mb-3 text-secondary"><i className="fa-solid fa-clipboard-check me-2"></i>Hedef Durumu Girişi</h4>
-                                    <form onSubmit={handleRecordSubmit}>
-                                        <div className="mb-3">
-                                            <label className="form-label">Hedef Seçin</label>
-                                            <select 
-                                                className="form-select" 
-                                                value={selectedTargetId} 
-                                                onChange={(e) => setSelectedTargetId(e.target.value)} 
-                                                required
-                                            >
-                                                <option value="">Hedef seçin...</option>
-                                                {targets.map(t => (
-                                                    <option key={t.id || t.Id} value={t.id || t.Id}>{t.title || t.Title}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="row">
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label">Tarih</label>
-                                                <input 
-                                                    type="date" 
-                                                    className="form-control" 
-                                                    value={recordDate} 
-                                                    onChange={(e) => setRecordDate(e.target.value)} 
-                                                    required 
-                                                />
-                                            </div>
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label">Saat</label>
-                                                <input 
-                                                    type="time" 
-                                                    className="form-control" 
-                                                    value={recordTime} 
-                                                    onChange={(e) => setRecordTime(e.target.value)} 
-                                                    required 
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="mb-3">
-                                            <label className="form-label">Süre (Dakika)</label>
+                        {/* Sağ Kolon: Durum Kaydı Ekleme & Not Ekleme */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                            
+                            {/* Kayıt / Durum Girişi */}
+                            <div style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb' }}>
+                                <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#111827' }}>Yeni Takip Kaydı Ekle</h3>
+                                <form onSubmit={handleRecordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '4px' }}>Hedef Seçin</label>
+                                        <select 
+                                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                                            value={selectedTargetId} 
+                                            onChange={(e) => setSelectedTargetId(e.target.value)} 
+                                            required
+                                        >
+                                            <option value="">Hedef seçin...</option>
+                                            {targets.map(t => (
+                                                <option key={t.id || t.Id} value={t.id || t.Id}>{t.title || t.Title}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '4px' }}>Tarih</label>
                                             <input 
-                                                type="number" 
-                                                className="form-control" 
-                                                placeholder="Örn: 3" 
-                                                value={recordDuration} 
-                                                onChange={(e) => setRecordDuration(e.target.value)} 
+                                                type="date" 
+                                                style={{ width: '100%', padding: '9px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                                                value={recordDate} 
+                                                onChange={(e) => setRecordDate(e.target.value)} 
                                                 required 
                                             />
                                         </div>
-                                        <div className="mb-3 form-check">
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '4px' }}>Saat</label>
                                             <input 
-                                                type="checkbox" 
-                                                className="form-check-input" 
-                                                id="appliedCheck" 
-                                                checked={recordIsApplied} 
-                                                onChange={(e) => setRecordIsApplied(e.target.checked)} 
-                                            />
-                                            <label className="form-check-label" htmlFor="appliedCheck">Uygulandı</label>
-                                        </div>
-                                        <button type="submit" className="btn btn-primary w-100">Kayıt Ekle</button>
-                                    </form>
-                                </div>
-
-                                {/* Not ve Görsel Girişi */}
-                                <div className="card p-4 shadow-sm">
-                                    <h4 className="mb-3 text-secondary"><i className="fa-solid fa-camera-retro me-2"></i>Görsel ve Açıklama Notu</h4>
-                                    <form onSubmit={handleNoteSubmit}>
-                                        <div className="mb-3">
-                                            <label className="form-label">İlgili Hedef</label>
-                                            <select 
-                                                className="form-select" 
-                                                value={noteTargetId} 
-                                                onChange={(e) => setNoteTargetId(e.target.value)} 
-                                                required
-                                            >
-                                                <option value="">Hedef seçin...</option>
-                                                {targets.map(t => (
-                                                    <option key={t.id || t.Id} value={t.id || t.Id}>{t.title || t.Title}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="mb-3">
-                                            <label className="form-label">Açıklama Metni</label>
-                                            <textarea 
-                                                className="form-control" 
-                                                rows="2" 
-                                                placeholder="Diş sağlığınızla ilgili notunuzu yazın..." 
-                                                value={noteDescription} 
-                                                onChange={(e) => setNoteDescription(e.target.value)} 
+                                                type="time" 
+                                                style={{ width: '100%', padding: '9px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                                                value={recordTime} 
+                                                onChange={(e) => setRecordTime(e.target.value)} 
                                                 required 
-                                            ></textarea>
-                                        </div>
-                                        <div className="mb-3">
-                                            <label className="form-label">Görsel Seç (.jpeg, .png vb.)</label>
-                                            <input 
-                                                type="file" 
-                                                className="form-control" 
-                                                accept="image/*" 
-                                                onChange={(e) => setNoteImage(e.target.files[0]?.name || '')} 
                                             />
                                         </div>
-                                        <button type="submit" className="btn btn-secondary w-100">Notu Kaydet</button>
-                                    </form>
-                                </div>
+                                    </div>
+
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '4px' }}>Süre (dk)</label>
+                                        <input 
+                                            type="number" 
+                                            style={{ width: '100%', padding: '9px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                                            placeholder="Örn: 3" 
+                                            value={recordDuration} 
+                                            onChange={(e) => setRecordDuration(e.target.value)} 
+                                            required 
+                                        />
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px' }}>
+                                        <input 
+                                            type="checkbox" 
+                                            id="appliedCheck" 
+                                            checked={recordIsApplied} 
+                                            onChange={(e) => setRecordIsApplied(e.target.checked)} 
+                                            style={{ width: '16px', height: '16px', accentColor: '#085f4f', cursor: 'pointer' }}
+                                        />
+                                        <label htmlFor="appliedCheck" style={{ fontSize: '0.85rem', color: '#374151', cursor: 'pointer' }}>Bu hedefi uyguladım / tamamladım</label>
+                                    </div>
+
+                                    <button type="submit" style={{ marginTop: '10px', padding: '10px', backgroundColor: '#085f4f', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                                        Kaydı Kaydet
+                                    </button>
+                                </form>
                             </div>
+
+                            {/* Not Ekleme Formu */}
+                            <div style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb' }}>
+                                <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#111827' }}>Not ve Görsel Ekle</h3>
+                                <form onSubmit={handleNoteSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '4px' }}>Hedef Seçin</label>
+                                        <select 
+                                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem' }}
+                                            value={noteTargetId} 
+                                            onChange={(e) => setNoteTargetId(e.target.value)} 
+                                            required
+                                        >
+                                            <option value="">Hedef seçin...</option>
+                                            {targets.map(t => (
+                                                <option key={t.id || t.Id} value={t.id || t.Id}>{t.title || t.Title}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '4px' }}>Tarih</label>
+                                            <input 
+                                                type="date" 
+                                                style={{ width: '100%', padding: '9px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                                                value={recordDate} 
+                                                onChange={(e) => setRecordDate(e.target.value)} 
+                                                required 
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '4px' }}>Saat</label>
+                                            <input 
+                                                type="time" 
+                                                style={{ width: '100%', padding: '9px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                                                value={recordTime} 
+                                                onChange={(e) => setRecordTime(e.target.value)} 
+                                                required 
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '4px' }}>Açıklama / Not</label>
+                                        <textarea 
+                                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                                            rows="2" 
+                                            placeholder="Diş sağlığınızla ilgili notlar..." 
+                                            value={noteDescription} 
+                                            onChange={(e) => setNoteDescription(e.target.value)} 
+                                            required 
+                                        ></textarea>
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '4px' }}>Görsel Seç (.jpeg, .png vb.)</label>
+                                        <input 
+                                            type="file" 
+                                            accept="image/*"
+                                            style={{ width: '100%', padding: '7px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', boxSizing: 'border-box', backgroundColor: '#fff', cursor: 'pointer' }}
+                                            onChange={(e) => {
+                                                const file = e.target.files[0];
+                                                if (file) {
+                                                    setNoteImage(file.name);
+                                                }
+                                            }} 
+                                        />
+                                    </div>
+                                    <button type="submit" style={{ padding: '10px', backgroundColor: '#085f4f', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                                        Notu Kaydet
+                                    </button>
+                                </form>
+                            </div>
+
                         </div>
                     </div>
                 )}
 
                 {/* 2. HEDEF SEKMESİ */}
-                {activeTab === 'hedef' && (
-                    <div className="row">
-                        {/* Hedef Ekleme Formu */}
-                        <div className="col-lg-5 mb-4">
-                            <div className="card p-4 shadow-sm">
-                                <h4 className="mb-3 text-secondary"><i className="fa-solid fa-plus-circle me-2"></i>Yeni Hedef Kaydet</h4>
-                                <form onSubmit={handleTargetSubmit}>
-                                    <div className="mb-3">
-                                        <label className="form-label">Başlık</label>
+                {activeTabName === 'hedef' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '25px' }}>
+                        
+                        {/* Hedef Listesi */}
+                        <div style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#111827' }}>Mevcut Hedeflerim</h3>
+                                <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{targets.length} hedef</span>
+                            </div>
+
+                            {targets.length === 0 ? (
+                                <p style={{ color: '#6b7280', fontSize: '0.9rem', margin: 0 }}>Henüz kayıtlı bir hedef bulunmuyor.</p>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '450px', overflowY: 'auto' }}>
+                                    {targets.map(target => {
+                                        const tId = target.id || target.Id;
+                                        return (
+                                            <div key={tId} style={{ padding: '15px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                                        <span style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#111827' }}>{target.title || target.Title}</span>
+                                                        <span style={{ fontSize: '0.7rem', padding: '2px 6px', backgroundColor: '#e5e7eb', color: '#374151', borderRadius: '6px' }}>{target.priority || target.Priority}</span>
+                                                    </div>
+                                                    <p style={{ margin: '0 0 6px 0', fontSize: '0.85rem', color: '#4b5563' }}>{target.description || target.Description || 'Açıklama belirtilmemiş'}</p>
+                                                    <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Periyot: {target.period || target.Period}</span>
+                                                </div>
+                                                <button onClick={() => tryDeleteTarget(tId)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '0.9rem' }} title="Hedefi Sil">
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Yeni Hedef Ekleme Formu */}
+                        <div style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb' }}>
+                            <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#111827' }}>Yeni Hedef Oluştur</h3>
+                            <form onSubmit={handleTargetSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '4px' }}>Hedef Başlığı *</label>
+                                    <input 
+                                        type="text" 
+                                        style={{ width: '100%', padding: '9px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                                        placeholder="Örn: Günde 2 kez diş fırçalamak" 
+                                        value={targetTitle} 
+                                        onChange={(e) => setTargetTitle(e.target.value)} 
+                                        required 
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '4px' }}>Açıklama</label>
+                                    <textarea 
+                                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                                        rows="2" 
+                                        placeholder="Hedefin detayları..." 
+                                        value={targetDescription} 
+                                        onChange={(e) => setTargetDescription(e.target.value)} 
+                                        required 
+                                    ></textarea>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '4px' }}>Periyot *</label>
                                         <input 
                                             type="text" 
-                                            className="form-control" 
-                                            placeholder="Örn: Diş İpi Kullanımı" 
-                                            value={targetTitle} 
-                                            onChange={(e) => setTargetTitle(e.target.value)} 
-                                            required 
-                                        />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Açıklama</label>
-                                        <textarea 
-                                            className="form-control" 
-                                            rows="2" 
-                                            placeholder="Hedef detayları..." 
-                                            value={targetDescription} 
-                                            onChange={(e) => setTargetDescription(e.target.value)} 
-                                        ></textarea>
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Periyot (Zaman ve Sıklık)</label>
-                                        <input 
-                                            type="text" 
-                                            className="form-control" 
-                                            placeholder="Örn: Günde bir, Altı ayda bir" 
+                                            style={{ width: '100%', padding: '9px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                                            placeholder="Örn: Her gün" 
                                             value={targetPeriod} 
                                             onChange={(e) => setTargetPeriod(e.target.value)} 
                                             required 
                                         />
                                     </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Önem Derecesi (Priority)</label>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '4px' }}>Önem Derecesi</label>
                                         <select 
-                                            className="form-select" 
+                                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', boxSizing: 'border-box' }}
                                             value={targetPriority} 
-                                            onChange={(e) => setTargetPriority(e.target.value)} 
-                                            required
+                                            onChange={(e) => setTargetPriority(e.target.value)}
                                         >
                                             <option value="Düşük">Düşük</option>
                                             <option value="Orta">Orta</option>
                                             <option value="Yüksek">Yüksek</option>
                                         </select>
                                     </div>
-                                    <button type="submit" className="btn btn-success w-100">Hedef Ekle</button>
-                                </form>
-                            </div>
+                                </div>
+                                <button type="submit" style={{ marginTop: '10px', padding: '10px', backgroundColor: '#085f4f', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                                    Hedef Seçimi ve Ekle
+                                </button>
+                            </form>
                         </div>
 
-                        {/* Hedefler Listesi */}
-                        <div className="col-lg-7">
-                            <div className="card p-4 shadow-sm">
-                                <h4 className="mb-3 text-secondary"><i className="fa-solid fa-list-check me-2"></i>Kayıtlı Hedeflerim</h4>
-                                {targets.length === 0 ? (
-                                    <p className="text-muted">Henüz kayıtlı bir hedef bulunmuyor.</p>
-                                ) : (
-                                    <div className="list-group">
-                                        {targets.map(target => {
-                                            const tId = target.id || target.Id;
-                                            return (
-                                                <div key={tId} className="list-group-item d-flex justify-content-between align-items-center py-3 mb-2 rounded shadow-sm">
-                                                    <div>
-                                                        <h6 className="mb-1 fw-bold">{target.title || target.Title}</h6>
-                                                        <p className="mb-1 text-muted small">{target.description || target.Description || 'Açıklama yok'}</p>
-                                                        <span className="badge bg-info text-dark me-2">Periyot: {target.period || target.Period}</span>
-                                                        <span className="badge bg-warning text-dark">Önem: {target.priority || target.Priority}</span>
-                                                    </div>
-                                                    <button className="btn btn-outline-danger btn-sm" onClick={() => tryDeleteTarget(tId)}>
-                                                        <i className="fa-solid fa-trash"></i>
-                                                    </button>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
                     </div>
                 )}
-            </div>
+
+            </main>
 
             {/* Silme Onay Modalı */}
             {showDeleteModal && (
-                <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                    <div className="modal-dialog">
-                        <div className="modal-content">
-                            <div className="modal-header bg-danger text-white">
-                                <h5 className="modal-title"><i className="fa-solid fa-triangle-exclamation me-2"></i>Silme Onayı</h5>
-                                <button type="button" className="btn-close btn-close-white" onClick={() => setShowDeleteModal(false)}></button>
-                            </div>
-                            <div className="modal-body">
-                                {deleteModalMessage}
-                            </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>İptal</button>
-                                <button type="button" className="btn btn-danger" onClick={confirmDelete}>Evet, Sil</button>
-                            </div>
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+                    <div style={{ backgroundColor: '#fff', padding: '25px', borderRadius: '12px', width: '400px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                        <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1rem', color: '#dc2626' }}>Silme Onayı</h3>
+                        <p style={{ margin: '0 0 20px 0', fontSize: '0.9rem', color: '#374151' }}>{deleteModalMessage}</p>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                            <button onClick={() => setShowDeleteModal(false)} style={{ padding: '8px 16px', backgroundColor: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}>İptal</button>
+                            <button onClick={confirmDelete} style={{ padding: '8px 16px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}>Evet, Sil</button>
                         </div>
                     </div>
                 </div>
             )}
+
         </div>
     );
 }
