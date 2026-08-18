@@ -51,7 +51,7 @@ namespace DisSagligiApp.Controllers
                 return BadRequest(new { message = "Geçersiz veri gönderildi." });
             }
 
-            // 1. Boş Alan Kontrolleri ve Özel Mesajlar
+            //  Boş Alan Kontrolleri ve Özel Mesajlar
             if (string.IsNullOrWhiteSpace(model.FullName))
             {
                 return BadRequest(new { message = "Lütfen Ad Soyad alanını doldurunuz." });
@@ -67,7 +67,7 @@ namespace DisSagligiApp.Controllers
                 return BadRequest(new { message = "Lütfen Doğum Tarihi alanını doldurunuz." });
             }
 
-            // 2. Mail adresi değişiyorsa, başka bir kullanıcı tarafından kullanılıp kullanılmadığını kontrol et
+            //  Mail adresi değişiyorsa, başka bir kullanıcı tarafından kullanılıp kullanılmadığını kontrol et
             var cleanEmail = model.Email.Trim().ToLower();
             if (user.Email != cleanEmail)
             {
@@ -78,7 +78,7 @@ namespace DisSagligiApp.Controllers
                 }
             }
 
-            // 3. Parola kriterleri kontrolü (Eğer yeni parola girildiyse)
+            //  Parola kriterleri kontrolü 
             if (!string.IsNullOrEmpty(model.Password))
             {
                 if (model.Password.Length < 8 || 
@@ -93,7 +93,7 @@ namespace DisSagligiApp.Controllers
                 user.PasswordHash = EncryptionHelper.Encrypt(model.Password);
             }
 
-            // 4. Diğer bilgileri güncelle
+            // Diğer bilgileri güncelle
             user.FullName = model.FullName.Trim();
             user.Email = cleanEmail;
             user.BirthDate = model.BirthDate;
@@ -133,7 +133,7 @@ namespace DisSagligiApp.Controllers
                 return BadRequest(new { message = "Parola alanı boş bırakılamaz." });
             }
 
-            // 2. Parola Kriter Kontrolü (Backend Tarafı)
+            // Parola Kriter Kontrolü (Backend Tarafı)
             // En az 8 karakter, en az bir büyük harf, bir küçük harf ve bir rakam içeriyor mu?
             var passwordRegex = new System.Text.RegularExpressions.Regex(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$");
             if (!passwordRegex.IsMatch(model.Password))
@@ -141,7 +141,7 @@ namespace DisSagligiApp.Controllers
                 return BadRequest(new { message = "Parola en az 8 karakter olmalı, büyük harf, küçük harf ve rakam içermelidir." });
             }
 
-            // 3. Aynı mail adresi kontrolü
+            // Aynı mail adresi kontrolü
             var cleanEmail = model.Email.Trim().ToLower();
             var existingUser = _context.Users.FirstOrDefault(u => u.Email != null && u.Email.ToLower() == cleanEmail);
             
@@ -150,7 +150,7 @@ namespace DisSagligiApp.Controllers
                 return BadRequest(new { message = "Bu mail adresi zaten kayıtlı." });
             }
 
-            // 4. Parolayı şifreleme ve kaydetme
+            // Parolayı şifreleme ve kaydetme
             string encryptedPassword = EncryptionHelper.Encrypt(model.Password);
 
             var user = new User

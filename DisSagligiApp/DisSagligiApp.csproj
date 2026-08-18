@@ -7,18 +7,20 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
+  <!-- Dış kütüphane bağımlılıkları-->
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
   </ItemGroup>
 
+  <!-- Katmanlı mimari proje referansları-->
   <ItemGroup>
     <ProjectReference Include="DisSagligiTakip.Business\DisSagligiTakip.Business.csproj" />
     <ProjectReference Include="DisSagligiTakip.DataAccess\DisSagligiTakip.DataAccess.csproj" />
     <ProjectReference Include="DisSagligiTakip.Entities\DisSagligiTakip.Entities.csproj" />
   </ItemGroup>
 
-  <!-- Program.cs dosyasını derlemeye açıkça dahil ediyoruz -->
+  
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Controllers\**\*.cs" />

@@ -7,7 +7,7 @@ namespace DisSagligiTakip.Business.Utilities
 {
     public static class EncryptionHelper
     {
-        // Tam olarak 32 karakter uzunluğunda güvenli bir anahtar metin:
+        // 32 karakter uzunluğunda güvenli anahtar metin:
         private static readonly string Key = "12345678901234567890123456789012";
         public static string Encrypt(string plainText)
         {

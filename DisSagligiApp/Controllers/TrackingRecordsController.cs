@@ -8,7 +8,7 @@ using DisSagligiTakip.DataAccess;
 [ApiController]
 public class TrackingRecordsController : ControllerBase
 {
-    private readonly AppDbContext _context; // Kendi DbContext sınıfının adı
+    private readonly AppDbContext _context; // DbContext sınıfının adı
 
     public TrackingRecordsController(AppDbContext context)
     {

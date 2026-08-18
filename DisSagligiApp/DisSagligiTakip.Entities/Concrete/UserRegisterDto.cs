@@ -4,7 +4,7 @@ namespace DisSagligiTakip.Entities.DTOs
     {
         public string FullName { get; set; }
         public string Email { get; set; }
-        public string Password { get; set; } // Kullanıcının formdan girdi düz şifre
+        public string Password { get; set; } // Kullanıcının formdan girdigi düz şifre
         public DateTime? BirthDate { get; set; }
     }
 }

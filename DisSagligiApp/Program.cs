@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// JSON serileştirme ayarları (İlişkisel nesneler arası sonsuz döngüyü önler)
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
@@ -20,28 +20,28 @@ builder.Services.AddCors(options =>
                         .AllowAnyHeader());
 });
 
-// Swagger servisleri
+// API Dokümantasyon servisleri (Swagger / OpenAPI)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddOpenApi();
 
-// Veritabanı bağlantısı
+// Veritabanı bağlantı ayarı (SQL Server bağlantı dizesi)
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Servis bağımlılıkları (DI)
+// Servis Bağımlılıkları (Interface - Manager eşleştirmeleri)
 builder.Services.AddScoped<IUserService, UserManager>();
 builder.Services.AddScoped<ITargetService, TargetManager>();
 
 var app = builder.Build();
 
-// Uygulama çalışırken veritabanı kontrolü için scope
+// Uygulama ilk ayağa kalktığında veritabanı kontrolü için scope
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 }
 
-// Configure the HTTP request pipeline.
+// Geliştirme ortamında Swagger arayüzünü aktif etme
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -49,7 +49,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// CORS middleware'ini aktif hale getiriyoruz (Controller rotalarından önce olmalı)
+// CORS middleware'ini aktif hale getirme
 app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
