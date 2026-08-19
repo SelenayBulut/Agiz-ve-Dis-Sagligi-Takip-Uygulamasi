@@ -15,8 +15,12 @@ Kullanıcılar ağız ve diş sağlığı alışkanlıklarını izleyebilir, hed
 - [ ] E-Posta Bilgilendirme Servisi
 - [ ] Katmanlı Mimari ve veritabanı Entegrasyonu
 
-## 📸 Ekran Görüntüleri
+## 📸 Proje Ekran Görüntüleri
 
+| Giriş Sayfası | Kayıt Ol | Parola Hatırlatma |
+| :---: | :---: | :---: |
+| ![Giriş Sayfası](resimler/girissayfasi.png) | ![Kayıt](resimler/kayıt.png) | ![Parola Hatırlatma](resimler/parolahatirlatma.jpeg) |
+| *Kullanıcı giriş ve kimlik doğrulama ekranı.* | *Yeni kullanıcı kayıt oluşturma paneli.* | *Şifre sıfırlama ve parola kurtarma adımı.* |
 
 ## 🛠 Kurulum
 
