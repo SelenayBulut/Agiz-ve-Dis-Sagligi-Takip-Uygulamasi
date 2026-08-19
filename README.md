@@ -29,7 +29,7 @@ Kullanıcılar ağız ve diş sağlığı alışkanlıklarını izleyebilir, hed
 
 | Profil | Kayıt Maili | Veritabanı |
 | :---: | :---: | :---: |
-| ![Profil](resimler/profil.png) | ![Kayıt Mail](resimler/kayitmail.png) | ![Veritabanı](resimler/veritabani.png) |
+| ![Profil](resimler/profil.png) | ![Kayıt Mail](resimler/kayıtmail.png) | ![Veritabanı](resimler/veritabani.png) |
 | *Kullanıcı hesap bilgileri ayar paneli.* | *Kayıt sonrası bilgilendirme maili.* | *Veritabanı şeması.* |
 
 ## 🛠 Kurulum
