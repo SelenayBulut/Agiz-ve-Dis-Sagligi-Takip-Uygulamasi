@@ -25,7 +25,12 @@ Kullanıcılar ağız ve diş sağlığı alışkanlıklarını izleyebilir, hed
 | Anasayfa | Takip Hedef | Takip Durum |
 | :---: | :---: | :---: |
 | ![Anasayfa](resimler/anasayfa.png) | ![Takip Hedef](resimler/takiphedef.png) | ![Takip Durum](resimler/takipdurum.png) |
-| *Kullanıcıyı karşılayan ana kontrol paneli.* | *Hedef belirleme ve planlama ekranı.* | *Güncel durum ve süreç takip modülü.* |
+| *Kullanıcıyı karşılayan ana kontrol paneli.* | *Hedef belirleme ekranı.* | *Güncel durum takip modülü.* |
+
+| Profil | Kayıt Maili | Veritabanı |
+| :---: | :---: | :---: |
+| ![Profil](resimler/profil.png) | ![Kayıt Mail](resimler/kayitmail.png) | ![Veritabanı](resimler/veritabani.png) |
+| *Kullanıcı hesap bilgileri ayar paneli.* | *Kayıt sonrası bilgilendirme maili.* | *Veritabanı şeması.* |
 
 ## 🛠 Kurulum
 
