@@ -19,8 +19,13 @@ Kullanıcılar ağız ve diş sağlığı alışkanlıklarını izleyebilir, hed
 
 | Giriş Sayfası | Kayıt Ol | Parola Hatırlatma |
 | :---: | :---: | :---: |
-| ![Giriş Sayfası](resimler/girissayfasi.png) | ![Kayıt](resimler/kayıt.png) | ![Parola Hatırlatma](resimler/parolahatirlatma.jpeg) |
+| ![Giriş Sayfası](resimler/girissayfasi.png) | ![Kayıt](resimler/kayıt.png) | ![Parola Hatırlatma](resimler/parolahatirlatma.png) |
 | *Kullanıcı giriş ve kimlik doğrulama ekranı.* | *Yeni kullanıcı kayıt oluşturma paneli.* | *Şifre sıfırlama ve parola kurtarma adımı.* |
+
+| Anasayfa | Takip Hedef | Takip Durum |
+| :---: | :---: | :---: |
+| ![Anasayfa](resimler/anasayfa.png) | ![Takip Hedef](resimler/takiphedef.png) | ![Takip Durum](resimler/takipdurum.png) |
+| *Kullanıcıyı karşılayan ana kontrol paneli.* | *Hedef belirleme ve planlama ekranı.* | *Güncel durum ve süreç takip modülü.* |
 
 ## 🛠 Kurulum
 
